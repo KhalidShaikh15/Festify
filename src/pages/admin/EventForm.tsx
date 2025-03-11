@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -154,7 +155,8 @@ const EventForm = (): JSX.Element => {
   };
 
   if (isAdmin === false) {
-    return navigate('/auth');
+    navigate('/auth');
+    return null;
   }
 
   if (isLoading) {

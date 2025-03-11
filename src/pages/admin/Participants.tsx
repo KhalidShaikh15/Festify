@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,7 @@ const ParticipantsList = (): JSX.Element => {
   const [editForm, setEditForm] = useState({
     name: '',
     email: '',
+    mobile_number: '',
     class: '',
     department: '',
   });
@@ -78,8 +80,8 @@ const ParticipantsList = (): JSX.Element => {
           .order('registered_at', { ascending: false });
         
         if (participantsError) throw participantsError;
-        setParticipants(participantsData);
-        setFilteredParticipants(participantsData);
+        setParticipants(participantsData as Participant[]);
+        setFilteredParticipants(participantsData as Participant[]);
       } catch (error: any) {
         toast({
           title: "Error fetching data",
@@ -105,6 +107,7 @@ const ParticipantsList = (): JSX.Element => {
     const filtered = participants.filter(p => 
       p.name.toLowerCase().includes(query) ||
       p.email.toLowerCase().includes(query) ||
+      (p.mobile_number && p.mobile_number.toLowerCase().includes(query)) ||
       p.class.toLowerCase().includes(query) ||
       p.department.toLowerCase().includes(query)
     );
@@ -119,10 +122,11 @@ const ParticipantsList = (): JSX.Element => {
   const handleDownloadCSV = () => {
     if (!participants.length || !event) return;
     
-    const headers = ['Name', 'Email', 'Class', 'Department', 'Registered At'];
+    const headers = ['Name', 'Email', 'Mobile Number', 'Class', 'Department', 'Registered At'];
     const csvData = participants.map(p => [
       p.name,
       p.email,
+      p.mobile_number || 'Not provided',
       p.class,
       p.department,
       new Date(p.registered_at).toLocaleString(),
@@ -177,6 +181,7 @@ const ParticipantsList = (): JSX.Element => {
     setEditForm({
       name: participant.name,
       email: participant.email,
+      mobile_number: participant.mobile_number || '',
       class: participant.class,
       department: participant.department,
     });
@@ -198,6 +203,7 @@ const ParticipantsList = (): JSX.Element => {
         .update({
           name: editForm.name,
           email: editForm.email,
+          mobile_number: editForm.mobile_number,
           class: editForm.class,
           department: editForm.department,
         })
@@ -308,6 +314,7 @@ const ParticipantsList = (): JSX.Element => {
                     <tr className="border-b">
                       <th className="text-left py-3 px-4">Name</th>
                       <th className="text-left py-3 px-4">Email</th>
+                      <th className="text-left py-3 px-4">Mobile</th>
                       <th className="text-left py-3 px-4">Class</th>
                       <th className="text-left py-3 px-4">Department</th>
                       <th className="text-left py-3 px-4">Registered At</th>
@@ -332,6 +339,14 @@ const ParticipantsList = (): JSX.Element => {
                                 name="email"
                                 type="email"
                                 value={editForm.email}
+                                onChange={handleEditFormChange}
+                                className="py-1"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                name="mobile_number"
+                                value={editForm.mobile_number}
                                 onChange={handleEditFormChange}
                                 className="py-1"
                               />
@@ -378,6 +393,7 @@ const ParticipantsList = (): JSX.Element => {
                           <>
                             <td className="py-3 px-4">{participant.name}</td>
                             <td className="py-3 px-4">{participant.email}</td>
+                            <td className="py-3 px-4">{participant.mobile_number || 'Not provided'}</td>
                             <td className="py-3 px-4">{participant.class}</td>
                             <td className="py-3 px-4">{participant.department}</td>
                             <td className="py-3 px-4">
