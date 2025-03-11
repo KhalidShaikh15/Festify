@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +10,7 @@ import Layout from '@/components/Layout';
 import { Event } from '@/types';
 import { format } from 'date-fns';
 
-const EventForm = () => {
+const EventForm = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditMode = !!id;

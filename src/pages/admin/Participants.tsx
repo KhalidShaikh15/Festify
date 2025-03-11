@@ -1,16 +1,16 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Download, Trash, Edit, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
-import { Event, Participant } from '@/types';
+import { Participant, Event } from '@/types';
+import { format } from 'date-fns';
 
-const ParticipantsList = () => {
+const ParticipantsList = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
@@ -62,7 +62,6 @@ const ParticipantsList = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch event details
         const { data: eventData, error: eventError } = await supabase
           .from('events')
           .select('*')
@@ -72,7 +71,6 @@ const ParticipantsList = () => {
         if (eventError) throw eventError;
         setEvent(eventData);
         
-        // Fetch participants
         const { data: participantsData, error: participantsError } = await supabase
           .from('participants')
           .select('*')
@@ -207,7 +205,6 @@ const ParticipantsList = () => {
       
       if (error) throw error;
       
-      // Update local state
       setParticipants(prev => prev.map(p => 
         p.id === participantId 
           ? { ...p, ...editForm } 
@@ -321,7 +318,6 @@ const ParticipantsList = () => {
                     {filteredParticipants.map((participant) => (
                       <tr key={participant.id} className="border-b hover:bg-gray-50">
                         {editingId === participant.id ? (
-                          // Edit mode
                           <>
                             <td className="py-3 px-4">
                               <Input
@@ -379,7 +375,6 @@ const ParticipantsList = () => {
                             </td>
                           </>
                         ) : (
-                          // View mode
                           <>
                             <td className="py-3 px-4">{participant.name}</td>
                             <td className="py-3 px-4">{participant.email}</td>

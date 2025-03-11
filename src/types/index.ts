@@ -16,6 +16,7 @@ export type Participant = {
   event_id: string;
   name: string;
   email: string;
+  mobile_number: string;
   class: string;
   department: string;
   registered_at: string;

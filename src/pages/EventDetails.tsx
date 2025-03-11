@@ -11,7 +11,7 @@ import Layout from '@/components/Layout';
 import { Event } from '@/types';
 import { format, parseISO } from 'date-fns';
 
-const EventDetails = () => {
+const EventDetails = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
@@ -20,6 +20,7 @@ const EventDetails = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    mobile_number: '',
     class: '',
     department: '',
   });
@@ -121,6 +122,7 @@ const EventDetails = () => {
           event_id: id,
           name: formData.name,
           email: formData.email,
+          mobile_number: formData.mobile_number,
           class: formData.class,
           department: formData.department,
         })
@@ -131,7 +133,7 @@ const EventDetails = () => {
       
       toast({
         title: "Registration successful!",
-        description: "You have successfully registered for this event.",
+        description: "You have successfully registered for this event. A confirmation email has been sent to your email address.",
       });
       
       // Send confirmation email
@@ -143,6 +145,7 @@ const EventDetails = () => {
       setFormData({
         name: '',
         email: '',
+        mobile_number: '',
         class: '',
         department: '',
       });
@@ -250,6 +253,19 @@ const EventDetails = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="your@email.com"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="mobile_number" className="text-sm font-medium">Mobile Number</label>
+                <Input
+                  id="mobile_number"
+                  name="mobile_number"
+                  type="tel"
+                  value={formData.mobile_number}
+                  onChange={handleInputChange}
+                  placeholder="Enter your mobile number"
                   required
                 />
               </div>

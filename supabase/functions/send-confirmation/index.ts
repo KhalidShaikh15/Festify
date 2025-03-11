@@ -46,6 +46,14 @@ serve(async (req: Request) => {
       throw new Error(participantError?.message || "Participant not found");
     }
     
+    // Format date for better readability
+    const eventDate = new Date(participant.event.event_date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
     // In a real application, you would use a proper email service here
     // For now, we'll just log the email that would be sent
     console.log(`
@@ -56,9 +64,22 @@ serve(async (req: Request) => {
       
       Thank you for registering for ${participant.event.title}!
       
+      Your registration details:
+      - Name: ${participant.name}
+      - Email: ${participant.email}
+      - Mobile: ${participant.mobile_number || 'Not provided'}
+      - Class: ${participant.class}
+      - Department: ${participant.department}
+      
       Event Details:
-      - Date: ${participant.event.event_date}
+      - Event: ${participant.event.title}
+      - Date: ${eventDate}
       - Time: ${participant.event.event_time}
+      - Venue: Campus Auditorium
+      
+      Please arrive 15 minutes before the event starts. Don't forget to bring your ID card.
+      
+      If you have any questions, please contact us at events@example.com.
       
       We look forward to seeing you there!
       
