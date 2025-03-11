@@ -9,16 +9,116 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_date: string
+          event_time: string
+          id: string
+          rules: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date: string
+          event_time: string
+          id?: string
+          rules?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          event_time?: string
+          id?: string
+          rules?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      participants: {
+        Row: {
+          class: string | null
+          department: string | null
+          email: string
+          event_id: string
+          id: string
+          name: string
+          registered_at: string | null
+        }
+        Insert: {
+          class?: string | null
+          department?: string | null
+          email: string
+          event_id: string
+          id?: string
+          name: string
+          registered_at?: string | null
+        }
+        Update: {
+          class?: string | null
+          department?: string | null
+          email?: string
+          event_id?: string
+          id?: string
+          name?: string
+          registered_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          uid: string
+          requested_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
