@@ -25,12 +25,19 @@ serve(async (req: Request) => {
       throw new Error("Missing Supabase environment variables");
     }
     
+    console.log("Creating Supabase client with URL:", supabaseUrl);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { participantId }: SendConfirmationRequest = await req.json();
+    
+    const requestData = await req.json();
+    console.log("Received request data:", requestData);
+    
+    const { participantId }: SendConfirmationRequest = requestData;
     
     if (!participantId) {
       throw new Error("Missing participant ID");
     }
+    
+    console.log("Fetching participant with ID:", participantId);
     
     // Get participant with event details
     const { data: participant, error: participantError } = await supabase
@@ -43,8 +50,11 @@ serve(async (req: Request) => {
       .single();
     
     if (participantError || !participant) {
+      console.error("Error fetching participant:", participantError);
       throw new Error(participantError?.message || "Participant not found");
     }
+    
+    console.log("Participant data fetched successfully:", participant);
     
     // Format date for better readability
     const eventDate = new Date(participant.event.event_date).toLocaleDateString('en-US', {
@@ -56,7 +66,7 @@ serve(async (req: Request) => {
     
     // In a real application, you would use a proper email service here
     // For now, we'll just log the email that would be sent
-    console.log(`
+    const emailContent = `
       Sending confirmation email to: ${participant.email}
       Subject: Registration Confirmed for ${participant.event.title}
       
@@ -85,7 +95,9 @@ serve(async (req: Request) => {
       
       Best regards,
       Event Management Team
-    `);
+    `;
+    
+    console.log(emailContent);
     
     // For real implementation, connect to an email service like Resend
     // For example:
@@ -97,8 +109,14 @@ serve(async (req: Request) => {
     //   html: `<p>Dear ${participant.name},</p>...`,
     // });
     
+    console.log("Email content generated successfully, would send to:", participant.email);
+    
     return new Response(
-      JSON.stringify({ success: true, message: "Confirmation email sent (simulated)" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Confirmation email sent (simulated)",
+        details: "This is a simulation. In a production environment, connect to a real email service."
+      }),
       {
         headers: {
           "Content-Type": "application/json",
