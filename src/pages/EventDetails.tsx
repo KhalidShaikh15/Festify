@@ -17,6 +17,7 @@ const EventDetails = (): JSX.Element => {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [emailSending, setEmailSending] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -76,6 +77,7 @@ const EventDetails = (): JSX.Element => {
   const sendConfirmationEmail = async (participantId: string) => {
     try {
       console.log("Sending confirmation email for participant:", participantId);
+      setEmailSending(true);
       
       const response = await supabase.functions.invoke('send-confirmation', {
         body: { participantId },
@@ -89,15 +91,22 @@ const EventDetails = (): JSX.Element => {
       }
       
       console.log('Confirmation email sent successfully');
+      toast({
+        title: "Confirmation Email Sent",
+        description: "A confirmation email has been sent to your email address.",
+        variant: "default",
+      });
       return true;
     } catch (error: any) {
       console.error('Error sending confirmation email:', error);
       toast({
-        title: "Email Notification",
-        description: "Registration successful, but we couldn't send a confirmation email. Please check your inbox later.",
-        variant: "default",
+        title: "Email Notification Error",
+        description: "Registration successful, but we couldn't send a confirmation email: " + error.message,
+        variant: "destructive",
       });
       return false;
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -151,21 +160,14 @@ const EventDetails = (): JSX.Element => {
       
       console.log("Registration successful, participant data:", newParticipant);
       
+      toast({
+        title: "Registration successful!",
+        description: "You have successfully registered for this event. We're sending your confirmation email now.",
+      });
+      
       // Send confirmation email
       if (newParticipant) {
-        const emailSent = await sendConfirmationEmail(newParticipant.id);
-        
-        toast({
-          title: "Registration successful!",
-          description: emailSent 
-            ? "You have successfully registered for this event. A confirmation email has been sent to your email address."
-            : "You have successfully registered for this event. We'll send a confirmation email shortly.",
-        });
-      } else {
-        toast({
-          title: "Registration successful!",
-          description: "You have successfully registered for this event.",
-        });
+        await sendConfirmationEmail(newParticipant.id);
       }
       
       // Reset form
@@ -322,8 +324,12 @@ const EventDetails = (): JSX.Element => {
                 />
               </div>
               
-              <Button type="submit" className="w-full mt-4" disabled={submitting}>
-                {submitting ? 'Registering...' : 'Register'}
+              <Button 
+                type="submit" 
+                className="w-full mt-4" 
+                disabled={submitting || emailSending}
+              >
+                {submitting ? 'Registering...' : emailSending ? 'Sending confirmation...' : 'Register'}
               </Button>
             </form>
           </CardContent>

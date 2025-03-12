@@ -24,6 +24,8 @@ serve(async (req: Request) => {
     if (!RESEND_API_KEY) {
       throw new Error("Missing RESEND_API_KEY environment variable");
     }
+    
+    console.log("Initializing Resend client with API key...");
     const resend = new Resend(RESEND_API_KEY);
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
