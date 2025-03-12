@@ -58,16 +58,16 @@ const Index = () => {
             <div className="md:w-2/3 text-white mb-6 md:mb-0 md:pr-8">
               <div className="mb-6">
                 <img 
-                  src="/logo.png" 
+                  src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d" 
                   alt="Event Management Logo" 
-                  className="h-16 md:h-20 mb-4"
+                  className="h-16 md:h-20 mb-4 rounded-lg"
                   onError={(e) => {
                     e.currentTarget.src = "https://placehold.co/600x200/1d4ed8/white?text=EVENT+PORTAL";
                   }}
                 />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to the Event Portal</h1>
-              <p className="text-lg opacity-90 mb-6">Discover and register for exciting events happening around your campus</p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to the Campus Event Hub</h1>
+              <p className="text-lg opacity-90 mb-6">Your one-stop platform for all campus activities and events</p>
               <div className="flex space-x-4">
                 <Button className="bg-white text-blue-700 hover:bg-blue-50">
                   <Link to="#events">Browse Events</Link>
@@ -79,7 +79,7 @@ const Index = () => {
             </div>
             <div className="md:w-1/3">
               <img 
-                src="/event-banner.jpg" 
+                src="https://images.unsplash.com/photo-1518770660439-4636190af475" 
                 alt="Event Banner" 
                 className="rounded-lg shadow-lg w-full h-auto"
                 onError={(e) => {
@@ -108,6 +108,16 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {events.map((event) => (
                 <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="w-full h-48 overflow-hidden">
+                    <img 
+                      src={`https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=500&h=350&fit=crop`} 
+                      alt={event.title}
+                      className="w-full h-full object-cover transition-transform hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://placehold.co/600x400/667eea/ffffff?text=${event.title.replace(/\s+/g, '+')}`;
+                      }}
+                    />
+                  </div>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xl">{event.title}</CardTitle>
                     <CardDescription className="line-clamp-2">{event.description}</CardDescription>
