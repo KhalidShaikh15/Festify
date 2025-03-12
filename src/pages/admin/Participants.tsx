@@ -5,9 +5,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, Calendar, Clock } from 'lucide-react';
+import { Search, Download, Calendar, Clock, Trash2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Layout from '@/components/Layout';
 import { format, parseISO } from 'date-fns';
 
@@ -18,6 +28,9 @@ const Participants = (): JSX.Element => {
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [deletingParticipant, setDeletingParticipant] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,6 +115,43 @@ const Participants = (): JSX.Element => {
   const handleEventChange = (eventId: string) => {
     setSelectedEvent(eventId);
     fetchParticipants(eventId);
+  };
+
+  const handleDeleteParticipant = (participantId: string) => {
+    setDeletingParticipant(participantId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteParticipant = async () => {
+    if (!deletingParticipant) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .delete()
+        .eq('id', deletingParticipant);
+      
+      if (error) throw error;
+      
+      // Remove participant from state
+      setParticipants(participants.filter(p => p.id !== deletingParticipant));
+      
+      toast({
+        title: "Participant removed",
+        description: "The participant has been removed from the event.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error removing participant",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setDeletingParticipant(null);
+    }
   };
 
   const exportToCSV = () => {
@@ -245,6 +295,7 @@ const Participants = (): JSX.Element => {
                                   <TableHead>Class</TableHead>
                                   <TableHead>Department</TableHead>
                                   <TableHead>Registration Date</TableHead>
+                                  <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -259,6 +310,16 @@ const Participants = (): JSX.Element => {
                                       {participant.registered_at ? 
                                         new Date(participant.registered_at).toLocaleDateString() : 
                                         'N/A'}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Button 
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteParticipant(participant.id)}
+                                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -275,6 +336,27 @@ const Participants = (): JSX.Element => {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Participant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this participant? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteParticipant}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Removing...' : 'Yes, remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
