@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { EventWithParticipantCount } from '@/types';
-import { Pencil, Trash, BarChart, UserPlus, Calendar } from 'lucide-react';
+import { Pencil, Trash, UserPlus, Calendar } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [events, setEvents] = useState<EventWithParticipantCount[]>([]);
@@ -52,7 +51,6 @@ const AdminDashboard = () => {
       
       setIsLoading(true);
       try {
-        // Fetch events with participant count
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
           .select(`
@@ -71,7 +69,6 @@ const AdminDashboard = () => {
         setEvents(eventsWithCount);
         setTotalEvents(eventsWithCount.length);
         
-        // Get total participants
         const { count: participantsCount, error: countError } = await supabase
           .from('participants')
           .select('*', { count: 'exact', head: true });
@@ -142,8 +139,8 @@ const AdminDashboard = () => {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg overflow-hidden shadow-lg p-6">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-2/3 text-white mb-6 md:mb-0 md:pr-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">Admin Dashboard</h1>
-              <p className="text-lg opacity-90">Manage your events and participants with ease</p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">Event Management Dashboard</h1>
+              <p className="text-lg opacity-90">Organize and track your campus events from one place</p>
             </div>
             <div className="md:w-1/3">
               <img 
@@ -151,7 +148,7 @@ const AdminDashboard = () => {
                 alt="Admin Dashboard" 
                 className="rounded-lg shadow-lg w-full h-auto"
                 onError={(e) => {
-                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=ADMIN+DASHBOARD";
+                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=EVENT+MANAGEMENT";
                 }}
               />
             </div>
@@ -214,52 +211,38 @@ const AdminDashboard = () => {
         <div className="space-y-4">
           {events.map((event) => (
             <Card key={event.id} className="overflow-hidden">
-              <div className="flex flex-col md:flex-row">
-                <div className="md:w-1/4 h-48 md:h-auto">
-                  <img 
-                    src={`https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=500&h=500&fit=crop`}
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://placehold.co/600x400/667eea/ffffff?text=${event.title.replace(/\s+/g, '+')}`;
-                    }}
-                  />
-                </div>
-                <div className="md:w-3/4">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>{event.title}</CardTitle>
-                        <CardDescription>Date: {new Date(event.event_date).toLocaleDateString()} | Time: {event.event_time}</CardDescription>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Link to={`/admin/events/${event.id}/edit`}>
-                          <Button variant="outline" size="sm">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        </Link>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteEvent(event.id)}>
-                          <Trash className="h-4 w-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <p className="line-clamp-2 text-gray-500">{event.description}</p>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <div className="text-sm">
-                      <span className="font-medium">{event.participant_count}</span> participants registered
-                    </div>
-                    <Link to={`/admin/events/${event.id}/participants`}>
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">{event.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      Date: {new Date(event.event_date).toLocaleDateString()} | Time: {event.event_time}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Link to={`/admin/events/${event.id}/edit`}>
                       <Button variant="outline" size="sm">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        View Participants
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
                       </Button>
                     </Link>
-                  </CardFooter>
+                    <Button variant="outline" size="sm" onClick={() => handleDeleteEvent(event.id)}>
+                      <Trash className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+                <p className="line-clamp-2 text-gray-500 mb-4">{event.description}</p>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm">
+                    <span className="font-medium">{event.participant_count}</span> participants registered
+                  </div>
+                  <Link to={`/admin/events/${event.id}/participants`}>
+                    <Button variant="outline" size="sm">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      View Participants
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </Card>
