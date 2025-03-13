@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,9 +100,13 @@ const EventForm = (): JSX.Element => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
-    // Validate title (not empty and not just whitespace)
+    // Validate title (not empty, not just whitespace, not only numbers, and doesn't start with a number)
     if (!formData.title || !formData.title.trim()) {
       newErrors.title = "Event name cannot be empty or contain only spaces";
+    } else if (/^\d+$/.test(formData.title.trim())) {
+      newErrors.title = "Event name cannot contain only numbers";
+    } else if (/^\d/.test(formData.title.trim())) {
+      newErrors.title = "Event name cannot start with a number";
     }
     
     // Validate other required fields

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +27,7 @@ const EventDetails = (): JSX.Element => {
     class: '',
     department: '',
   });
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,11 +58,10 @@ const EventDetails = (): JSX.Element => {
         
         setEvent(data);
 
-        // Check registration deadline
         if (data.registration_deadline) {
           const now = new Date();
           const deadline = new Date(data.registration_deadline);
-          deadline.setHours(23, 59, 59, 999); // Set to end of the day
+          deadline.setHours(23, 59, 59, 999);
           
           if (isBefore(deadline, now)) {
             setIsRegistrationClosed(true);
@@ -70,7 +69,6 @@ const EventDetails = (): JSX.Element => {
           }
         }
 
-        // Check participant count if max_participants is set
         if (data.max_participants !== null) {
           const { count, error: countError } = await supabase
             .from('participants')
@@ -104,6 +102,43 @@ const EventDetails = (): JSX.Element => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateRegistrationForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!formData.name || !formData.name.trim()) {
+      newErrors.name = "Name cannot be empty";
+    } else if (/^\d+$/.test(formData.name.trim())) {
+      newErrors.name = "Name cannot contain only numbers";
+    }
+    
+    if (!formData.email || !formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    if (!formData.mobile_number || !formData.mobile_number.trim()) {
+      newErrors.mobile_number = "Mobile number is required";
+    } else if (!/^\d{10}$/.test(formData.mobile_number.trim())) {
+      newErrors.mobile_number = "Mobile number must be exactly 10 digits";
+    }
+    
+    if (!formData.class || !formData.class.trim()) {
+      newErrors.class = "Class is required";
+    }
+    
+    if (!formData.department || !formData.department.trim()) {
+      newErrors.department = "Department is required";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const sendConfirmationEmail = async (participantId: string) => {
@@ -154,12 +189,20 @@ const EventDetails = (): JSX.Element => {
       return;
     }
     
+    if (!validateRegistrationForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSubmitting(true);
     
     try {
       if (!id) return;
       
-      // Check if already registered
       const { data: existingReg, error: checkError } = await supabase
         .from('participants')
         .select('id')
@@ -179,7 +222,6 @@ const EventDetails = (): JSX.Element => {
         return;
       }
       
-      // Check again for max participants (for race conditions)
       if (event?.max_participants !== null) {
         const { count, error: countError } = await supabase
           .from('participants')
@@ -204,7 +246,6 @@ const EventDetails = (): JSX.Element => {
         ...formData
       });
       
-      // Register participant
       const { data: newParticipant, error } = await supabase
         .from('participants')
         .insert({
@@ -222,10 +263,8 @@ const EventDetails = (): JSX.Element => {
       
       console.log("Registration successful, participant data:", newParticipant);
       
-      // Update participant count
       setParticipantCount(prev => prev + 1);
       
-      // Check if max participants reached after this registration
       if (event?.max_participants !== null && participantCount + 1 >= event.max_participants) {
         setIsRegistrationClosed(true);
         setRegistrationClosedReason("Maximum number of participants reached");
@@ -236,12 +275,10 @@ const EventDetails = (): JSX.Element => {
         description: "You have successfully registered for this event. We're sending your confirmation email now.",
       });
       
-      // Send confirmation email
       if (newParticipant) {
         await sendConfirmationEmail(newParticipant.id);
       }
       
-      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -367,8 +404,12 @@ const EventDetails = (): JSX.Element => {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Enter your full name"
+                    className={errors.name ? "border-red-500" : ""}
                     required
                   />
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -380,8 +421,12 @@ const EventDetails = (): JSX.Element => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="your@email.com"
+                    className={errors.email ? "border-red-500" : ""}
                     required
                   />
+                  {errors.email && (
+                    <p className="text-sm text-red-500">{errors.email}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -392,9 +437,13 @@ const EventDetails = (): JSX.Element => {
                     type="tel"
                     value={formData.mobile_number}
                     onChange={handleInputChange}
-                    placeholder="Enter your mobile number"
+                    placeholder="Enter your 10-digit mobile number"
+                    className={errors.mobile_number ? "border-red-500" : ""}
                     required
                   />
+                  {errors.mobile_number && (
+                    <p className="text-sm text-red-500">{errors.mobile_number}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -405,8 +454,12 @@ const EventDetails = (): JSX.Element => {
                     value={formData.class}
                     onChange={handleInputChange}
                     placeholder="Enter your class"
+                    className={errors.class ? "border-red-500" : ""}
                     required
                   />
+                  {errors.class && (
+                    <p className="text-sm text-red-500">{errors.class}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -417,8 +470,12 @@ const EventDetails = (): JSX.Element => {
                     value={formData.department}
                     onChange={handleInputChange}
                     placeholder="Enter your department"
+                    className={errors.department ? "border-red-500" : ""}
                     required
                   />
+                  {errors.department && (
+                    <p className="text-sm text-red-500">{errors.department}</p>
+                  )}
                 </div>
                 
                 <Button 
