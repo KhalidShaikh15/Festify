@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import EventForm from "./pages/admin/EventForm";
 import ParticipantsList from "./pages/admin/Participants";
 
+// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (

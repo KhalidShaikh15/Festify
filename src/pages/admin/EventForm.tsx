@@ -21,10 +21,13 @@ const EventForm = (): JSX.Element => {
     rules: '',
     event_date: format(new Date(), 'yyyy-MM-dd'),
     event_time: format(new Date(), 'HH:mm'),
+    registration_deadline: format(new Date(), 'yyyy-MM-dd'),
+    max_participants: 100,
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -88,10 +91,54 @@ const EventForm = (): JSX.Element => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    // Validate title (not empty and not just whitespace)
+    if (!formData.title || !formData.title.trim()) {
+      newErrors.title = "Event name cannot be empty or contain only spaces";
+    }
+    
+    // Validate other required fields
+    if (!formData.event_date) {
+      newErrors.event_date = "Event date is required";
+    }
+    
+    if (!formData.event_time) {
+      newErrors.event_time = "Event time is required";
+    }
+    
+    if (!formData.registration_deadline) {
+      newErrors.registration_deadline = "Registration deadline is required";
+    }
+    
+    if (formData.max_participants !== null && (isNaN(Number(formData.max_participants)) || Number(formData.max_participants) <= 0)) {
+      newErrors.max_participants = "Maximum participants must be a positive number";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -106,11 +153,13 @@ const EventForm = (): JSX.Element => {
         const { error } = await supabase
           .from('events')
           .update({
-            title: formData.title,
+            title: formData.title?.trim(),
             description: formData.description,
             rules: formData.rules,
             event_date: formData.event_date,
             event_time: formData.event_time,
+            registration_deadline: formData.registration_deadline,
+            max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id);
@@ -126,11 +175,13 @@ const EventForm = (): JSX.Element => {
         const { error } = await supabase
           .from('events')
           .insert({
-            title: formData.title,
+            title: formData.title?.trim(),
             description: formData.description,
             rules: formData.rules,
             event_date: formData.event_date,
             event_time: formData.event_time,
+            registration_deadline: formData.registration_deadline,
+            max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             created_by: session.user.id,
           });
         
@@ -191,8 +242,12 @@ const EventForm = (): JSX.Element => {
                   value={formData.title || ''}
                   onChange={handleInputChange}
                   placeholder="Enter event title"
+                  className={errors.title ? "border-red-500" : ""}
                   required
                 />
+                {errors.title && (
+                  <p className="text-sm text-red-500">{errors.title}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -229,8 +284,12 @@ const EventForm = (): JSX.Element => {
                     type="date"
                     value={formData.event_date || ''}
                     onChange={handleInputChange}
+                    className={errors.event_date ? "border-red-500" : ""}
                     required
                   />
+                  {errors.event_date && (
+                    <p className="text-sm text-red-500">{errors.event_date}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -241,8 +300,47 @@ const EventForm = (): JSX.Element => {
                     type="time"
                     value={formData.event_time || ''}
                     onChange={handleInputChange}
+                    className={errors.event_time ? "border-red-500" : ""}
                     required
                   />
+                  {errors.event_time && (
+                    <p className="text-sm text-red-500">{errors.event_time}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="registration_deadline" className="text-sm font-medium">Registration Deadline</label>
+                  <Input
+                    id="registration_deadline"
+                    name="registration_deadline"
+                    type="date"
+                    value={formData.registration_deadline || ''}
+                    onChange={handleInputChange}
+                    className={errors.registration_deadline ? "border-red-500" : ""}
+                    required
+                  />
+                  {errors.registration_deadline && (
+                    <p className="text-sm text-red-500">{errors.registration_deadline}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="max_participants" className="text-sm font-medium">Maximum Participants</label>
+                  <Input
+                    id="max_participants"
+                    name="max_participants"
+                    type="number"
+                    min="1"
+                    value={formData.max_participants || ''}
+                    onChange={handleInputChange}
+                    placeholder="Maximum number of participants"
+                    className={errors.max_participants ? "border-red-500" : ""}
+                  />
+                  {errors.max_participants && (
+                    <p className="text-sm text-red-500">{errors.max_participants}</p>
+                  )}
                 </div>
               </div>
             </CardContent>

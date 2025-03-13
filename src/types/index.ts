@@ -9,6 +9,8 @@ export type Event = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  registration_deadline: string | null;
+  max_participants: number | null;
 };
 
 export type Participant = {

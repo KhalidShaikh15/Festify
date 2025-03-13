@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { EventWithParticipantCount } from '@/types';
-import { Pencil, Trash, UserPlus, Calendar } from 'lucide-react';
+import { Pencil, Trash, UserPlus, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { format, parseISO, isBefore } from 'date-fns';
 
 const AdminDashboard = () => {
   const [events, setEvents] = useState<EventWithParticipantCount[]>([]);
@@ -119,6 +121,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const isRegistrationClosed = (event: EventWithParticipantCount) => {
+    // Check registration deadline
+    if (event.registration_deadline) {
+      const now = new Date();
+      const deadline = new Date(event.registration_deadline);
+      deadline.setHours(23, 59, 59, 999); // Set to end of the day
+      
+      if (isBefore(deadline, now)) {
+        return true;
+      }
+    }
+    
+    // Check max participants
+    if (event.max_participants !== null && event.participant_count >= event.max_participants) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(parseISO(dateString), 'MMM dd, yyyy');
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   if (isAdmin === false) {
     return <Navigate to="/auth" />;
   }
@@ -139,16 +169,16 @@ const AdminDashboard = () => {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg overflow-hidden shadow-lg p-6">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-2/3 text-white mb-6 md:mb-0 md:pr-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">Event Management Dashboard</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">XAM Event Management</h1>
               <p className="text-lg opacity-90">Organize and track your campus events from one place</p>
             </div>
             <div className="md:w-1/3">
               <img 
-                src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6" 
+                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b" 
                 alt="Admin Dashboard" 
                 className="rounded-lg shadow-lg w-full h-auto"
                 onError={(e) => {
-                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=EVENT+MANAGEMENT";
+                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=XAM+EVENTS";
                 }}
               />
             </div>
@@ -215,8 +245,15 @@ const AdminDashboard = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-xl font-semibold">{event.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      Date: {new Date(event.event_date).toLocaleDateString()} | Time: {event.event_time}
+                    <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {formatDate(event.event_date)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {event.event_time}
+                      </span>
                     </p>
                   </div>
                   <div className="flex space-x-2">
@@ -233,6 +270,30 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <p className="line-clamp-2 text-gray-500 mb-4">{event.description}</p>
+                
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {event.registration_deadline && (
+                    <div className="text-xs bg-gray-100 px-2 py-1 rounded-md flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-gray-600" />
+                      <span>Deadline: {formatDate(event.registration_deadline)}</span>
+                    </div>
+                  )}
+                  
+                  {event.max_participants !== null && (
+                    <div className="text-xs bg-gray-100 px-2 py-1 rounded-md flex items-center gap-1">
+                      <UserPlus className="h-3 w-3 text-gray-600" />
+                      <span>{event.participant_count}/{event.max_participants} participants</span>
+                    </div>
+                  )}
+                  
+                  {isRegistrationClosed(event) && (
+                    <div className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>Registration Closed</span>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex justify-between items-center">
                   <div className="text-sm">
                     <span className="font-medium">{event.participant_count}</span> participants registered
