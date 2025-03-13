@@ -49,6 +49,14 @@ const Index = () => {
     }
   };
 
+  const formatDateTime = (dateTimeString: string) => {
+    try {
+      return format(parseISO(dateTimeString), 'MMMM dd, yyyy h:mm a');
+    } catch (e) {
+      return dateTimeString;
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-8">

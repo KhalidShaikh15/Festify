@@ -61,7 +61,6 @@ const EventDetails = (): JSX.Element => {
         if (data.registration_deadline) {
           const now = new Date();
           const deadline = new Date(data.registration_deadline);
-          deadline.setHours(23, 59, 59, 999);
           
           if (isBefore(deadline, now)) {
             setIsRegistrationClosed(true);
@@ -307,6 +306,14 @@ const EventDetails = (): JSX.Element => {
     }
   };
 
+  const formatDateTime = (dateTimeString: string) => {
+    try {
+      return format(parseISO(dateTimeString), 'MMMM dd, yyyy h:mm a');
+    } catch (e) {
+      return dateTimeString;
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -367,7 +374,7 @@ const EventDetails = (): JSX.Element => {
                   <Calendar className="h-4 w-4 text-primary" />
                   Registration Deadline
                 </h3>
-                <p className="text-md">{formatDate(event.registration_deadline)}</p>
+                <p className="text-md">{formatDateTime(event.registration_deadline)}</p>
               </div>
             )}
             

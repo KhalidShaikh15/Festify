@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 const EventForm = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +21,7 @@ const EventForm = (): JSX.Element => {
     rules: '',
     event_date: format(new Date(), 'yyyy-MM-dd'),
     event_time: format(new Date(), 'HH:mm'),
-    registration_deadline: format(new Date(), 'yyyy-MM-dd'),
+    registration_deadline: format(new Date(), 'yyyy-MM-dd\'T\'HH:mm'),
     max_participants: 100,
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -70,6 +71,16 @@ const EventForm = (): JSX.Element => {
           
           if (error) throw error;
           
+          // Format the registration_deadline to DateTime-Local format if it exists
+          if (data.registration_deadline) {
+            try {
+              const date = new Date(data.registration_deadline);
+              data.registration_deadline = format(date, "yyyy-MM-dd'T'HH:mm");
+            } catch (e) {
+              console.error("Error formatting date:", e);
+            }
+          }
+          
           setFormData(data);
         } catch (error: any) {
           toast({
@@ -100,13 +111,16 @@ const EventForm = (): JSX.Element => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
-    // Validate title (not empty, not just whitespace, not only numbers, and doesn't start with a number)
+    // Validate title (not empty, not just whitespace, not only numbers)
     if (!formData.title || !formData.title.trim()) {
       newErrors.title = "Event name cannot be empty or contain only spaces";
     } else if (/^\d+$/.test(formData.title.trim())) {
       newErrors.title = "Event name cannot contain only numbers";
     } else if (/^\d/.test(formData.title.trim())) {
       newErrors.title = "Event name cannot start with a number";
+    } else if (/^[^a-zA-Z0-9_]/.test(formData.title.trim())) {
+      // Check if the title starts with a special character other than underscore
+      newErrors.title = "Event name cannot start with special characters except for '_'";
     }
     
     // Validate other required fields
@@ -151,6 +165,18 @@ const EventForm = (): JSX.Element => {
         throw new Error("You must be logged in to create/edit events");
       }
       
+      // Format the deadline to ISO string for storage
+      let registrationDeadline = null;
+      if (formData.registration_deadline) {
+        try {
+          const date = new Date(formData.registration_deadline);
+          registrationDeadline = date.toISOString();
+        } catch (e) {
+          console.error("Error formatting deadline:", e);
+          throw new Error("Invalid registration deadline format");
+        }
+      }
+      
       if (isEditMode && id) {
         // Update existing event
         const { error } = await supabase
@@ -161,7 +187,7 @@ const EventForm = (): JSX.Element => {
             rules: formData.rules,
             event_date: formData.event_date,
             event_time: formData.event_time,
-            registration_deadline: formData.registration_deadline,
+            registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             updated_at: new Date().toISOString(),
           })
@@ -183,7 +209,7 @@ const EventForm = (): JSX.Element => {
             rules: formData.rules,
             event_date: formData.event_date,
             event_time: formData.event_time,
-            registration_deadline: formData.registration_deadline,
+            registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             created_by: session.user.id,
           });
@@ -192,7 +218,7 @@ const EventForm = (): JSX.Element => {
         
         toast({
           title: "Event created!",
-          description: "The event has been created successfully.",
+          description: "The event has been created successfully and a dedicated table has been created for this event in the database.",
         });
       }
       
@@ -314,11 +340,11 @@ const EventForm = (): JSX.Element => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="registration_deadline" className="text-sm font-medium">Registration Deadline</label>
+                  <label htmlFor="registration_deadline" className="text-sm font-medium">Registration Deadline (Date & Time)</label>
                   <Input
                     id="registration_deadline"
                     name="registration_deadline"
-                    type="date"
+                    type="datetime-local"
                     value={formData.registration_deadline || ''}
                     onChange={handleInputChange}
                     className={errors.registration_deadline ? "border-red-500" : ""}
