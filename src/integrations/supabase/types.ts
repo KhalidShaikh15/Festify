@@ -17,6 +17,8 @@ export type Database = {
           event_date: string
           event_time: string
           id: string
+          max_participants: number | null
+          registration_deadline: string | null
           rules: string | null
           title: string
           updated_at: string | null
@@ -28,6 +30,8 @@ export type Database = {
           event_date: string
           event_time: string
           id?: string
+          max_participants?: number | null
+          registration_deadline?: string | null
           rules?: string | null
           title: string
           updated_at?: string | null
@@ -39,6 +43,8 @@ export type Database = {
           event_date?: string
           event_time?: string
           id?: string
+          max_participants?: number | null
+          registration_deadline?: string | null
           rules?: string | null
           title?: string
           updated_at?: string | null
