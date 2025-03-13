@@ -59,10 +59,10 @@ const Index = () => {
               <div className="mb-6">
                 <img 
                   src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d" 
-                  alt="Event Management Logo" 
+                  alt="XAM Logo" 
                   className="h-16 md:h-20 mb-4 rounded-lg"
                   onError={(e) => {
-                    e.currentTarget.src = "https://placehold.co/600x200/1d4ed8/white?text=EVENT+PORTAL";
+                    e.currentTarget.src = "https://placehold.co/600x200/1d4ed8/white?text=XAM+PORTAL";
                   }}
                 />
               </div>

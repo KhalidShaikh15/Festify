@@ -77,7 +77,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary">Event Manager</Link>
+          <Link to="/" className="text-2xl font-bold text-primary">XAM</Link>
           <nav className="flex items-center gap-4">
             <Link to="/" className="text-gray-600 hover:text-primary">Events</Link>
             
@@ -109,7 +109,7 @@ const Layout = ({ children }: LayoutProps) => {
       
       <footer className="bg-white shadow-sm mt-auto py-4">
         <div className="container mx-auto px-4 text-center text-gray-500">
-          &copy; {new Date().getFullYear()} Event Management System
+          &copy; {new Date().getFullYear()} XAM
         </div>
       </footer>
       
