@@ -8,7 +8,7 @@ import { Calendar, Clock, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isBefore } from 'date-fns';
 
 const Index = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -26,7 +26,41 @@ const Index = () => {
         
         if (error) throw error;
         
-        setEvents(data);
+        // Filter out events with passed registration deadlines
+        const now = new Date();
+        const activeEvents = data.filter(event => {
+          if (!event.registration_deadline) return true;
+          
+          const deadline = new Date(event.registration_deadline);
+          return !isBefore(deadline, now);
+        });
+        
+        // Filter out events that have reached max participants
+        const eventsWithParticipantCounts = await Promise.all(
+          activeEvents.map(async (event) => {
+            if (event.max_participants === null) return event;
+            
+            const { count, error: countError } = await supabase
+              .from('participants')
+              .select('*', { count: 'exact', head: true })
+              .eq('event_id', event.id);
+            
+            if (countError) {
+              console.error('Error fetching participant count:', countError);
+              return event;
+            }
+            
+            // Only include events that haven't reached max participants
+            if (count !== null && count >= event.max_participants) {
+              return null;
+            }
+            
+            return event;
+          })
+        );
+        
+        // Filter out null values (events that have reached max participants)
+        setEvents(eventsWithParticipantCounts.filter(Boolean) as Event[]);
       } catch (error: any) {
         toast({
           title: "Error fetching events",
@@ -39,6 +73,19 @@ const Index = () => {
     };
 
     fetchEvents();
+
+    // Set up real-time subscription for events table
+    const channel = supabase
+      .channel('public:events')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'events' }, 
+        fetchEvents
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [toast]);
 
   const formatDate = (dateString: string) => {

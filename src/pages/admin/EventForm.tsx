@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,7 +74,6 @@ const EventForm = (): JSX.Element => {
           
           if (error) throw error;
           
-          // Format the registration_deadline to DateTime-Local format if it exists
           if (data.registration_deadline) {
             try {
               const date = new Date(data.registration_deadline);
@@ -106,7 +104,6 @@ const EventForm = (): JSX.Element => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -154,19 +151,12 @@ const EventForm = (): JSX.Element => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
-    // Validate title (not empty, not just whitespace, not only numbers)
     if (!formData.title || !formData.title.trim()) {
-      newErrors.title = "Event name cannot be empty or contain only spaces";
-    } else if (/^\d+$/.test(formData.title.trim())) {
-      newErrors.title = "Event name cannot contain only numbers";
-    } else if (/^\d/.test(formData.title.trim())) {
-      newErrors.title = "Event name cannot start with a number";
-    } else if (/^[^a-zA-Z0-9_]/.test(formData.title.trim())) {
-      // Check if the title starts with a special character other than underscore
-      newErrors.title = "Event name cannot start with special characters except for '_'";
+      newErrors.title = "Event name cannot be empty";
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.title.trim())) {
+      newErrors.title = "Event name can only contain alphabets and spaces";
     }
     
-    // Validate other required fields
     if (!formData.event_date) {
       newErrors.event_date = "Event date is required";
     }
@@ -208,10 +198,8 @@ const EventForm = (): JSX.Element => {
         throw new Error("You must be logged in to create/edit events");
       }
 
-      // Upload image if selected
       const imageUrl = await uploadImage();
       
-      // Format the deadline to ISO string for storage
       let registrationDeadline = null;
       if (formData.registration_deadline) {
         try {
@@ -224,7 +212,6 @@ const EventForm = (): JSX.Element => {
       }
       
       if (isEditMode && id) {
-        // Update existing event
         const { error } = await supabase
           .from('events')
           .update({
@@ -247,7 +234,6 @@ const EventForm = (): JSX.Element => {
           description: "The event has been updated successfully.",
         });
       } else {
-        // Create new event
         const { error } = await supabase
           .from('events')
           .insert({

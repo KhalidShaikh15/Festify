@@ -68,16 +68,25 @@ const AdminDashboard = () => {
           participant_count: event.participants.length > 0 ? event.participants[0].count : 0
         }));
         
+        // Sort events: active first, then closed
+        const now = new Date();
+        eventsWithCount.sort((a, b) => {
+          const aIsClosed = isEventClosed(a);
+          const bIsClosed = isEventClosed(b);
+          
+          if (aIsClosed && !bIsClosed) return 1;  // a (closed) goes after b (active)
+          if (!aIsClosed && bIsClosed) return -1; // a (active) goes before b (closed)
+          
+          // If both have the same status, sort by date (descending)
+          return new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
+        });
+        
         setEvents(eventsWithCount);
         setTotalEvents(eventsWithCount.length);
         
-        const { count: participantsCount, error: countError } = await supabase
-          .from('participants')
-          .select('*', { count: 'exact', head: true });
-        
-        if (countError) throw countError;
-        
-        setTotalParticipants(participantsCount || 0);
+        // Calculate total participants across all events
+        const totalCount = eventsWithCount.reduce((sum, event) => sum + event.participant_count, 0);
+        setTotalParticipants(totalCount);
       } catch (error: any) {
         toast({
           title: "Error fetching dashboard data",
@@ -90,6 +99,28 @@ const AdminDashboard = () => {
     };
 
     fetchData();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('public:events')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'events' }, 
+        fetchData
+      )
+      .subscribe();
+
+    const participantsChannel = supabase
+      .channel('public:participants')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'participants' }, 
+        fetchData
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(participantsChannel);
+    };
   }, [isAdmin, toast]);
 
   const handleDeleteEvent = async (id: string) => {
@@ -98,6 +129,15 @@ const AdminDashboard = () => {
     }
     
     try {
+      // First, get the participant count for this event
+      const { count, error: countError } = await supabase
+        .from('participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', id);
+      
+      if (countError) throw countError;
+      
+      // Delete the event
       const { error } = await supabase
         .from('events')
         .delete()
@@ -110,8 +150,14 @@ const AdminDashboard = () => {
         description: "The event has been successfully deleted.",
       });
       
+      // Update state immediately for a smoother UI experience
       setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
       setTotalEvents(prev => prev - 1);
+      
+      // Update total participant count
+      if (count !== null) {
+        setTotalParticipants(prev => prev - count);
+      }
     } catch (error: any) {
       toast({
         title: "Error deleting event",
@@ -121,12 +167,11 @@ const AdminDashboard = () => {
     }
   };
 
-  const isRegistrationClosed = (event: EventWithParticipantCount) => {
+  const isEventClosed = (event: EventWithParticipantCount) => {
     // Check registration deadline
     if (event.registration_deadline) {
       const now = new Date();
       const deadline = new Date(event.registration_deadline);
-      deadline.setHours(23, 59, 59, 999); // Set to end of the day
       
       if (isBefore(deadline, now)) {
         return true;
@@ -239,75 +284,94 @@ const AdminDashboard = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {events.map((event) => (
-            <Card key={event.id} className="overflow-hidden">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-semibold">{event.title}</h3>
-                    <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(event.event_date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {event.event_time}
-                      </span>
-                    </p>
+          {events.map((event) => {
+            const closed = isEventClosed(event);
+            return (
+              <Card 
+                key={event.id} 
+                className={`overflow-hidden ${closed ? 'border-gray-200 bg-gray-50' : ''}`}
+              >
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className={`text-xl font-semibold ${closed ? 'text-gray-500' : ''}`}>
+                        {event.title}
+                        {closed && (
+                          <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-md">
+                            Closed
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(event.event_date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {event.event_time}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Link to={`/admin/events/${event.id}/edit`}>
+                        <Button variant="outline" size="sm">
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </Link>
+                      <Button variant="outline" size="sm" onClick={() => handleDeleteEvent(event.id)}>
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Link to={`/admin/events/${event.id}/edit`}>
+                  <p className={`line-clamp-2 mb-4 ${closed ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {event.description}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {event.registration_deadline && (
+                      <div className="text-xs bg-gray-100 px-2 py-1 rounded-md flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-gray-600" />
+                        <span>Deadline: {formatDate(event.registration_deadline)}</span>
+                      </div>
+                    )}
+                    
+                    {event.max_participants !== null && (
+                      <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 ${
+                        event.participant_count >= event.max_participants 
+                          ? 'bg-red-100 text-red-700' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        <UserPlus className="h-3 w-3" />
+                        <span>{event.participant_count}/{event.max_participants} participants</span>
+                      </div>
+                    )}
+                    
+                    {closed && (
+                      <div className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>Registration Closed</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm">
+                      <span className="font-medium">{event.participant_count}</span> participants registered
+                    </div>
+                    <Link to={`/admin/events/${event.id}/participants`}>
                       <Button variant="outline" size="sm">
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        View Participants
                       </Button>
                     </Link>
-                    <Button variant="outline" size="sm" onClick={() => handleDeleteEvent(event.id)}>
-                      <Trash className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
                   </div>
                 </div>
-                <p className="line-clamp-2 text-gray-500 mb-4">{event.description}</p>
-                
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {event.registration_deadline && (
-                    <div className="text-xs bg-gray-100 px-2 py-1 rounded-md flex items-center gap-1">
-                      <Calendar className="h-3 w-3 text-gray-600" />
-                      <span>Deadline: {formatDate(event.registration_deadline)}</span>
-                    </div>
-                  )}
-                  
-                  {event.max_participants !== null && (
-                    <div className="text-xs bg-gray-100 px-2 py-1 rounded-md flex items-center gap-1">
-                      <UserPlus className="h-3 w-3 text-gray-600" />
-                      <span>{event.participant_count}/{event.max_participants} participants</span>
-                    </div>
-                  )}
-                  
-                  {isRegistrationClosed(event) && (
-                    <div className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      <span>Registration Closed</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="text-sm">
-                    <span className="font-medium">{event.participant_count}</span> participants registered
-                  </div>
-                  <Link to={`/admin/events/${event.id}/participants`}>
-                    <Button variant="outline" size="sm">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      View Participants
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </Layout>

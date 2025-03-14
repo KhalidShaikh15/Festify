@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Calendar, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
-import { format, parseISO, isBefore } from 'date-fns';
+import { format, parseISO, isBefore, differenceInSeconds } from 'date-fns';
 
 const EventDetails = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +20,8 @@ const EventDetails = (): JSX.Element => {
   const [participantCount, setParticipantCount] = useState<number>(0);
   const [isRegistrationClosed, setIsRegistrationClosed] = useState<boolean>(false);
   const [registrationClosedReason, setRegistrationClosedReason] = useState<string>('');
+  const [timeUntilDeadline, setTimeUntilDeadline] = useState<string | null>(null);
+  const deadlineTimerRef = useRef<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,6 +31,36 @@ const EventDetails = (): JSX.Element => {
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
+
+  const checkRegistrationDeadline = (event: Event | null) => {
+    if (!event || !event.registration_deadline) return false;
+    
+    const now = new Date();
+    const deadline = new Date(event.registration_deadline);
+    
+    if (isBefore(deadline, now)) {
+      setIsRegistrationClosed(true);
+      setRegistrationClosedReason("Registration deadline has passed");
+      return true;
+    }
+    
+    const secondsRemaining = differenceInSeconds(deadline, now);
+    if (secondsRemaining <= 300) {
+      const minutes = Math.floor(secondsRemaining / 60);
+      const seconds = secondsRemaining % 60;
+      setTimeUntilDeadline(`${minutes}m ${seconds}s`);
+    }
+    
+    if (deadlineTimerRef.current) {
+      window.clearTimeout(deadlineTimerRef.current);
+    }
+    
+    deadlineTimerRef.current = window.setTimeout(() => {
+      checkRegistrationDeadline(event);
+    }, 1000);
+    
+    return false;
+  };
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -57,16 +89,7 @@ const EventDetails = (): JSX.Element => {
         }
         
         setEvent(data);
-
-        if (data.registration_deadline) {
-          const now = new Date();
-          const deadline = new Date(data.registration_deadline);
-          
-          if (isBefore(deadline, now)) {
-            setIsRegistrationClosed(true);
-            setRegistrationClosedReason("Registration deadline has passed");
-          }
-        }
+        checkRegistrationDeadline(data);
 
         if (data.max_participants !== null) {
           const { count, error: countError } = await supabase
@@ -96,6 +119,30 @@ const EventDetails = (): JSX.Element => {
     };
 
     fetchEvent();
+
+    const participantsChannel = supabase
+      .channel('public:participants')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'participants', filter: `event_id=eq.${id}` }, 
+        payload => {
+          setParticipantCount(prev => {
+            const newCount = prev + 1;
+            if (event?.max_participants !== null && newCount >= event.max_participants) {
+              setIsRegistrationClosed(true);
+              setRegistrationClosedReason("Maximum number of participants reached");
+            }
+            return newCount;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (deadlineTimerRef.current) {
+        window.clearTimeout(deadlineTimerRef.current);
+      }
+      supabase.removeChannel(participantsChannel);
+    };
   }, [id, navigate, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -178,6 +225,15 @@ const EventDetails = (): JSX.Element => {
 
   const handleRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (event && checkRegistrationDeadline(event)) {
+      toast({
+        title: "Registration Closed",
+        description: "The registration deadline has just passed while you were filling the form",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (isRegistrationClosed) {
       toast({
@@ -415,97 +471,108 @@ const EventDetails = (): JSX.Element => {
                 <p className="text-red-600">{registrationClosedReason}</p>
               </div>
             ) : (
-              <form onSubmit={handleRegistration} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Full Name</label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    className={errors.name ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-red-500">{errors.name}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">Email</label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="your@email.com"
-                    className={errors.email ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-red-500">{errors.email}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="mobile_number" className="text-sm font-medium">Mobile Number</label>
-                  <Input
-                    id="mobile_number"
-                    name="mobile_number"
-                    type="tel"
-                    value={formData.mobile_number}
-                    onChange={handleInputChange}
-                    placeholder="Enter your 10-digit mobile number"
-                    className={errors.mobile_number ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.mobile_number && (
-                    <p className="text-sm text-red-500">{errors.mobile_number}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="class" className="text-sm font-medium">Class</label>
-                  <Input
-                    id="class"
-                    name="class"
-                    value={formData.class}
-                    onChange={handleInputChange}
-                    placeholder="Enter your class"
-                    className={errors.class ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.class && (
-                    <p className="text-sm text-red-500">{errors.class}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="department" className="text-sm font-medium">Department</label>
-                  <Input
-                    id="department"
-                    name="department"
-                    value={formData.department}
-                    onChange={handleInputChange}
-                    placeholder="Enter your department"
-                    className={errors.department ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.department && (
-                    <p className="text-sm text-red-500">{errors.department}</p>
-                  )}
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full mt-4" 
-                  disabled={submitting || emailSending}
-                >
-                  {submitting ? 'Registering...' : emailSending ? 'Sending confirmation...' : 'Register'}
-                </Button>
-              </form>
+              <>
+                {timeUntilDeadline && (
+                  <div className="p-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div className="flex items-center gap-2 text-yellow-700">
+                      <AlertCircle className="h-5 w-5" />
+                      <h3 className="font-medium">Registration closing soon!</h3>
+                    </div>
+                    <p className="text-yellow-700">Registration will close in {timeUntilDeadline}</p>
+                  </div>
+                )}
+                <form onSubmit={handleRegistration} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium">Full Name</label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter your full name"
+                      className={errors.name ? "border-red-500" : ""}
+                      required
+                    />
+                    {errors.name && (
+                      <p className="text-sm text-red-500">{errors.name}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">Email</label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="your@email.com"
+                      className={errors.email ? "border-red-500" : ""}
+                      required
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-red-500">{errors.email}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="mobile_number" className="text-sm font-medium">Mobile Number</label>
+                    <Input
+                      id="mobile_number"
+                      name="mobile_number"
+                      type="tel"
+                      value={formData.mobile_number}
+                      onChange={handleInputChange}
+                      placeholder="Enter your 10-digit mobile number"
+                      className={errors.mobile_number ? "border-red-500" : ""}
+                      required
+                    />
+                    {errors.mobile_number && (
+                      <p className="text-sm text-red-500">{errors.mobile_number}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="class" className="text-sm font-medium">Class</label>
+                    <Input
+                      id="class"
+                      name="class"
+                      value={formData.class}
+                      onChange={handleInputChange}
+                      placeholder="Enter your class"
+                      className={errors.class ? "border-red-500" : ""}
+                      required
+                    />
+                    {errors.class && (
+                      <p className="text-sm text-red-500">{errors.class}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="department" className="text-sm font-medium">Department</label>
+                    <Input
+                      id="department"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleInputChange}
+                      placeholder="Enter your department"
+                      className={errors.department ? "border-red-500" : ""}
+                      required
+                    />
+                    {errors.department && (
+                      <p className="text-sm text-red-500">{errors.department}</p>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full mt-4" 
+                    disabled={submitting || emailSending}
+                  >
+                    {submitting ? 'Registering...' : emailSending ? 'Sending confirmation...' : 'Register'}
+                  </Button>
+                </form>
+              </>
             )}
           </CardContent>
         </Card>
