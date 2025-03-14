@@ -91,7 +91,7 @@ const Layout = ({ children }: LayoutProps) => {
             {isLoggedIn ? (
               <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
             ) : (
-              <Link to="/auth" className="text-gray-600 hover:text-primary">Admin Login</Link>
+              <Link to="/auth" className="text-gray-600 hover:text-primary">Sign In</Link>
             )}
           </nav>
         </div>

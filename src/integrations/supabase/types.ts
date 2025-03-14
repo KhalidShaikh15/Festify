@@ -42,6 +42,39 @@ export type Database = {
           },
         ]
       }
+      event_0524a484_945d_432d_81b0_f309e7470736: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_0524a484_945d_432d_81b0_f309e7470736_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_1ae2651c_f932_45ff_9007_13379bda3d3f: {
         Row: {
           created_at: string | null
@@ -75,6 +108,39 @@ export type Database = {
           },
         ]
       }
+      event_3bb4d630_b41f_48fb_a480_467a3e9554f8: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_3bb4d630_b41f_48fb_a480_467a3e9554f8_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_8f5e868a_05f0_4b5b_a856_dd8d0f894388: {
         Row: {
           created_at: string | null
@@ -94,6 +160,39 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "event_8f5e868a_05f0_4b5b_a856_dd8d0f894388_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_9cf33ea7_a445_43c3_9313_79a10c19b218: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_9cf33ea7_a445_43c3_9313_79a10c19b218_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -153,9 +154,8 @@ const EventForm = (): JSX.Element => {
     
     if (!formData.title || !formData.title.trim()) {
       newErrors.title = "Event name cannot be empty";
-    } else if (!/^[a-zA-Z\s]+$/.test(formData.title.trim())) {
-      newErrors.title = "Event name can only contain alphabets and spaces";
     }
+    // Removed alphabet-only validation for event title
     
     if (!formData.event_date) {
       newErrors.event_date = "Event date is required";
