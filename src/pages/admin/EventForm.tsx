@@ -1,15 +1,19 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
 import { format, parseISO, isBefore, isEqual, addDays } from 'date-fns';
-import { ImagePlus, Loader2 } from 'lucide-react';
+
+// Import refactored components
+import EventFormBasic from '@/components/event/EventFormBasic';
+import EventFormImage from '@/components/event/EventFormImage';
+import EventFormDateTime from '@/components/event/EventFormDateTime';
+import EventFormRegistration from '@/components/event/EventFormRegistration';
 
 const EventForm = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -231,6 +235,7 @@ const EventForm = (): JSX.Element => {
             registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             image_url: imageUrl,
+            location: formData.location,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id);
@@ -253,6 +258,7 @@ const EventForm = (): JSX.Element => {
             registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             image_url: imageUrl,
+            location: formData.location,
             created_by: session.user.id,
           });
         
@@ -305,177 +311,29 @@ const EventForm = (): JSX.Element => {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="title" className="text-sm font-medium">Event Title</label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title || ''}
-                  onChange={handleInputChange}
-                  placeholder="Enter event title"
-                  className={errors.title ? "border-red-500" : ""}
-                  required
-                />
-                {errors.title && (
-                  <p className="text-sm text-red-500">{errors.title}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium">Description</label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description || ''}
-                  onChange={handleInputChange}
-                  placeholder="Enter event description"
-                  rows={4}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="rules" className="text-sm font-medium">Rules (Optional)</label>
-                <Textarea
-                  id="rules"
-                  name="rules"
-                  value={formData.rules || ''}
-                  onChange={handleInputChange}
-                  placeholder="Enter event rules"
-                  rows={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="location" className="text-sm font-medium">Location (Optional)</label>
-                <Input
-                  id="location"
-                  name="location"
-                  value={formData.location || ''}
-                  onChange={handleInputChange}
-                  placeholder="Enter event location"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Event Image</label>
-                <div className="flex items-center gap-4">
-                  {formData.image_url && (
-                    <div className="w-24 h-24 overflow-hidden rounded-md border">
-                      <img 
-                        src={formData.image_url} 
-                        alt="Event" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=Event+Image";
-                        }}
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('image')?.click()}
-                      className="w-full"
-                      disabled={isUploading}
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <ImagePlus className="mr-2 h-4 w-4" />
-                          {formData.image_url ? 'Change Image' : 'Upload Image'}
-                        </>
-                      )}
-                    </Button>
-                    {imageFile && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        {imageFile.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="event_date" className="text-sm font-medium">Event Date</label>
-                  <Input
-                    id="event_date"
-                    name="event_date"
-                    type="date"
-                    value={formData.event_date || ''}
-                    onChange={handleInputChange}
-                    className={errors.event_date ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.event_date && (
-                    <p className="text-sm text-red-500">{errors.event_date}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="event_time" className="text-sm font-medium">Event Time</label>
-                  <Input
-                    id="event_time"
-                    name="event_time"
-                    type="time"
-                    value={formData.event_time || ''}
-                    onChange={handleInputChange}
-                    className={errors.event_time ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.event_time && (
-                    <p className="text-sm text-red-500">{errors.event_time}</p>
-                  )}
-                </div>
-              </div>
+              <EventFormBasic 
+                formData={formData} 
+                errors={errors} 
+                handleInputChange={handleInputChange} 
+              />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="registration_deadline" className="text-sm font-medium">Registration Deadline (Date & Time)</label>
-                  <Input
-                    id="registration_deadline"
-                    name="registration_deadline"
-                    type="datetime-local"
-                    value={formData.registration_deadline || ''}
-                    onChange={handleInputChange}
-                    className={errors.registration_deadline ? "border-red-500" : ""}
-                    required
-                  />
-                  {errors.registration_deadline && (
-                    <p className="text-sm text-red-500">{errors.registration_deadline}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="max_participants" className="text-sm font-medium">Maximum Participants</label>
-                  <Input
-                    id="max_participants"
-                    name="max_participants"
-                    type="number"
-                    min="1"
-                    value={formData.max_participants || ''}
-                    onChange={handleInputChange}
-                    placeholder="Maximum number of participants"
-                    className={errors.max_participants ? "border-red-500" : ""}
-                  />
-                  {errors.max_participants && (
-                    <p className="text-sm text-red-500">{errors.max_participants}</p>
-                  )}
-                </div>
-              </div>
+              <EventFormImage 
+                imageUrl={formData.image_url || null} 
+                onImageChange={handleImageChange}
+                isUploading={isUploading} 
+              />
+              
+              <EventFormDateTime 
+                formData={formData} 
+                errors={errors} 
+                handleInputChange={handleInputChange} 
+              />
+              
+              <EventFormRegistration 
+                formData={formData} 
+                errors={errors} 
+                handleInputChange={handleInputChange} 
+              />
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button 
