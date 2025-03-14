@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
 import { format, parseISO, isBefore } from 'date-fns';
-import { AlertCircle, Calendar, Clock, MapPin, User, Mail, Phone, School, Building } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, User, Mail, Phone, School, Building } from 'lucide-react';
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -252,10 +253,20 @@ const EventDetails = () => {
                 <Clock className="h-4 w-4" />
                 <span>{event.event_time}</span>
               </div>
-              <div className="flex items-center gap-2 text-gray-500">
-                <MapPin className="h-4 w-4" />
-                <span>{event.location || 'To be announced'}</span>
-              </div>
+              
+              {event.location && (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Building className="h-4 w-4" />
+                  <span>{event.location}</span>
+                </div>
+              )}
+              
+              {event.registration_deadline && (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Registration Deadline: {formatDateTime(event.registration_deadline)}</span>
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <h4 className="text-md font-medium">Rules</h4>

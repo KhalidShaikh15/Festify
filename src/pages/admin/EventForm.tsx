@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isBefore, isEqual, addDays } from 'date-fns';
 import { ImagePlus, Loader2 } from 'lucide-react';
 
 const EventForm = (): JSX.Element => {
@@ -22,9 +21,10 @@ const EventForm = (): JSX.Element => {
     rules: '',
     event_date: format(new Date(), 'yyyy-MM-dd'),
     event_time: format(new Date(), 'HH:mm'),
-    registration_deadline: format(new Date(), 'yyyy-MM-dd\'T\'HH:mm'),
+    registration_deadline: format(addDays(new Date(), 1), 'yyyy-MM-dd\'T\'HH:mm'),
     max_participants: 100,
     image_url: '',
+    location: '',
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -154,8 +154,9 @@ const EventForm = (): JSX.Element => {
     
     if (!formData.title || !formData.title.trim()) {
       newErrors.title = "Event name cannot be empty";
+    } else if (!/^[a-zA-Z0-9_\s]+$/.test(formData.title.trim())) {
+      newErrors.title = "Event name can only contain alphanumeric characters, spaces, and underscores";
     }
-    // Removed alphabet-only validation for event title
     
     if (!formData.event_date) {
       newErrors.event_date = "Event date is required";
@@ -167,6 +168,13 @@ const EventForm = (): JSX.Element => {
     
     if (!formData.registration_deadline) {
       newErrors.registration_deadline = "Registration deadline is required";
+    } else {
+      const eventDate = new Date(`${formData.event_date}T${formData.event_time || '00:00'}`);
+      const deadlineDate = new Date(formData.registration_deadline);
+      
+      if (isEqual(deadlineDate, eventDate) || isBefore(deadlineDate, eventDate)) {
+        newErrors.registration_deadline = "Registration deadline must be after the event start date and time";
+      }
     }
     
     if (formData.max_participants !== null && (isNaN(Number(formData.max_participants)) || Number(formData.max_participants) <= 0)) {
@@ -335,6 +343,17 @@ const EventForm = (): JSX.Element => {
                   onChange={handleInputChange}
                   placeholder="Enter event rules"
                   rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="location" className="text-sm font-medium">Location (Optional)</label>
+                <Input
+                  id="location"
+                  name="location"
+                  value={formData.location || ''}
+                  onChange={handleInputChange}
+                  placeholder="Enter event location"
                 />
               </div>
 

@@ -174,6 +174,39 @@ export type Database = {
           },
         ]
       }
+      event_9b806a2d_9a68_4ad6_9603_beb02203cb2d: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_9b806a2d_9a68_4ad6_9603_beb02203cb2d_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_9cf33ea7_a445_43c3_9313_79a10c19b218: {
         Row: {
           created_at: string | null
@@ -259,6 +292,39 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "event_dbaae55a_5edd_48e3_9e5c_7d92dd6a0fb6_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_df2e2908_a11a_408d_9ab0_3c508432d3da: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_df2e2908_a11a_408d_9ab0_3c508432d3da_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
