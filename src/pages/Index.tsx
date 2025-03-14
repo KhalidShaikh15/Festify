@@ -118,7 +118,7 @@ const Index = () => {
                 <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <div className="w-full h-48 overflow-hidden">
                     <img 
-                      src={`https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=500&h=350&fit=crop`} 
+                      src={event.image_url || `https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=500&h=350&fit=crop`} 
                       alt={event.title}
                       className="w-full h-full object-cover transition-transform hover:scale-105"
                       onError={(e) => {

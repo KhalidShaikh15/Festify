@@ -341,6 +341,19 @@ const EventDetails = (): JSX.Element => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto space-y-8">
+        {event.image_url && (
+          <div className="w-full h-64 md:h-80 overflow-hidden rounded-lg">
+            <img 
+              src={event.image_url} 
+              alt={event.title} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = `https://placehold.co/1200x600/667eea/ffffff?text=${event.title.replace(/\s+/g, '+')}`;
+              }}
+            />
+          </div>
+        )}
+
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-3xl">{event.title}</CardTitle>

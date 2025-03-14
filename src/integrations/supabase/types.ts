@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      event_dbaae55a_5edd_48e3_9e5c_7d92dd6a0fb6: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_dbaae55a_5edd_48e3_9e5c_7d92dd6a0fb6_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string | null
@@ -17,6 +50,7 @@ export type Database = {
           event_date: string
           event_time: string
           id: string
+          image_url: string | null
           max_participants: number | null
           registration_deadline: string | null
           rules: string | null
@@ -30,6 +64,7 @@ export type Database = {
           event_date: string
           event_time: string
           id?: string
+          image_url?: string | null
           max_participants?: number | null
           registration_deadline?: string | null
           rules?: string | null
@@ -43,6 +78,7 @@ export type Database = {
           event_date?: string
           event_time?: string
           id?: string
+          image_url?: string | null
           max_participants?: number | null
           registration_deadline?: string | null
           rules?: string | null

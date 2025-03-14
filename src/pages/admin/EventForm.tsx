@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
 import { format, parseISO } from 'date-fns';
+import { ImagePlus, Loader2 } from 'lucide-react';
 
 const EventForm = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -23,11 +24,14 @@ const EventForm = (): JSX.Element => {
     event_time: format(new Date(), 'HH:mm'),
     registration_deadline: format(new Date(), 'yyyy-MM-dd\'T\'HH:mm'),
     max_participants: 100,
+    image_url: '',
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -108,6 +112,45 @@ const EventForm = (): JSX.Element => {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return formData.image_url || null;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = imageFile.name.split('.').pop();
+      const filePath = `${id || crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('event_images')
+        .upload(filePath, imageFile, {
+          upsert: true,
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage
+        .from('event_images')
+        .getPublicUrl(filePath);
+      
+      return data.publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Image upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
@@ -164,6 +207,9 @@ const EventForm = (): JSX.Element => {
       if (!session) {
         throw new Error("You must be logged in to create/edit events");
       }
+
+      // Upload image if selected
+      const imageUrl = await uploadImage();
       
       // Format the deadline to ISO string for storage
       let registrationDeadline = null;
@@ -189,6 +235,7 @@ const EventForm = (): JSX.Element => {
             event_time: formData.event_time,
             registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
+            image_url: imageUrl,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id);
@@ -211,6 +258,7 @@ const EventForm = (): JSX.Element => {
             event_time: formData.event_time,
             registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
+            image_url: imageUrl,
             created_by: session.user.id,
           });
         
@@ -304,6 +352,57 @@ const EventForm = (): JSX.Element => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Event Image</label>
+                <div className="flex items-center gap-4">
+                  {formData.image_url && (
+                    <div className="w-24 h-24 overflow-hidden rounded-md border">
+                      <img 
+                        src={formData.image_url} 
+                        alt="Event" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=Event+Image";
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('image')?.click()}
+                      className="w-full"
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <ImagePlus className="mr-2 h-4 w-4" />
+                          {formData.image_url ? 'Change Image' : 'Upload Image'}
+                        </>
+                      )}
+                    </Button>
+                    {imageFile && (
+                      <p className="mt-1 text-sm text-gray-500">
+                        {imageFile.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="event_date" className="text-sm font-medium">Event Date</label>
@@ -381,7 +480,7 @@ const EventForm = (): JSX.Element => {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isUploading}>
                 {isSubmitting 
                   ? (isEditMode ? 'Updating...' : 'Creating...') 
                   : (isEditMode ? 'Update Event' : 'Create Event')}
