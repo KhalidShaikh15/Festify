@@ -110,6 +110,33 @@ const EventForm = (): JSX.Element => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+
+    // When event date or time changes, validate registration deadline
+    if (name === 'event_date' || name === 'event_time') {
+      validateDeadline(name === 'event_date' ? value : formData.event_date, 
+                      name === 'event_time' ? value : formData.event_time, 
+                      formData.registration_deadline);
+    }
+  };
+
+  const validateDeadline = (eventDate: string, eventTime: string, deadline: string) => {
+    if (!deadline) return;
+    
+    try {
+      const eventDateTime = new Date(`${eventDate}T${eventTime || '00:00'}`);
+      const deadlineDate = new Date(deadline);
+      
+      if (isEqual(deadlineDate, eventDateTime) || isBefore(deadlineDate, eventDateTime)) {
+        setErrors(prev => ({ 
+          ...prev, 
+          registration_deadline: "Registration deadline must be before the event start date and time" 
+        }));
+      } else {
+        setErrors(prev => ({ ...prev, registration_deadline: '' }));
+      }
+    } catch (e) {
+      console.error("Error validating dates:", e);
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,8 +201,8 @@ const EventForm = (): JSX.Element => {
       const eventDate = new Date(`${formData.event_date}T${formData.event_time || '00:00'}`);
       const deadlineDate = new Date(formData.registration_deadline);
       
-      if (isEqual(deadlineDate, eventDate) || isBefore(deadlineDate, eventDate)) {
-        newErrors.registration_deadline = "Registration deadline must be after the event start date and time";
+      if (isEqual(deadlineDate, eventDate) || isBefore(eventDate, deadlineDate)) {
+        newErrors.registration_deadline = "Registration deadline must be before the event start date and time";
       }
     }
     

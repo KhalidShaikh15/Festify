@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -211,21 +210,11 @@ const AdminDashboard = () => {
   return (
     <Layout>
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg overflow-hidden shadow-lg p-6">
+        <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-lg overflow-hidden shadow-lg p-6">
           <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-2/3 text-white mb-6 md:mb-0 md:pr-8">
+            <div className="md:w-full text-white mb-6 md:mb-0 md:pr-8">
               <h1 className="text-3xl md:text-4xl font-bold mb-2">XAM Event Management</h1>
               <p className="text-lg opacity-90">Organize and track your campus events from one place</p>
-            </div>
-            <div className="md:w-1/3">
-              <img 
-                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b" 
-                alt="Admin Dashboard" 
-                className="rounded-lg shadow-lg w-full h-auto"
-                onError={(e) => {
-                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=XAM+EVENTS";
-                }}
-              />
             </div>
           </div>
         </div>
@@ -238,7 +227,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-4">
-              <Calendar className="h-8 w-8 text-primary" />
+              <Calendar className="h-8 w-8 text-cyan-600" />
               <div className="text-3xl font-bold">{totalEvents}</div>
             </div>
           </CardContent>
@@ -250,7 +239,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-4">
-              <UserPlus className="h-8 w-8 text-primary" />
+              <UserPlus className="h-8 w-8 text-cyan-600" />
               <div className="text-3xl font-bold">{totalParticipants}</div>
             </div>
           </CardContent>
@@ -262,7 +251,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <Link to="/admin/events/new">
-              <Button className="w-full">Create New Event</Button>
+              <Button className="w-full bg-cyan-600 hover:bg-cyan-700">Create New Event</Button>
             </Link>
           </CardContent>
         </Card>

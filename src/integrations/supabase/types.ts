@@ -339,6 +339,39 @@ export type Database = {
           },
         ]
       }
+      event_e1db4132_f900_4660_b1bc_6b579ffe4c96: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_e1db4132_f900_4660_b1bc_6b579ffe4c96_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string | null

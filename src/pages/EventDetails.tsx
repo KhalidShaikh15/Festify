@@ -108,7 +108,10 @@ const EventDetailsPage = () => {
     <Layout>
       <div className="container mx-auto mt-8">
         <Card className="overflow-hidden">
-          <EventHeader event={event} isRegistrationOpen={isRegistrationOpen} />
+          <div className="text-content p-6">
+            <h1 className="text-2xl font-bold mb-2">{event.title}</h1>
+            <p className="text-gray-600 mb-4">{event.description}</p>
+          </div>
           <EventDetailsSection event={event} />
           <RegistrationForm 
             event={event} 

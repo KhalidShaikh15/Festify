@@ -37,12 +37,10 @@ const EventDetailsSection = ({ event }: EventDetailsProps) => {
           <span>{event.event_time}</span>
         </div>
         
-        {event.registration_deadline && (
-          <div className="flex items-center gap-2 text-gray-500">
-            <AlertCircle className="h-4 w-4" />
-            <span>Registration Deadline: {formatDateTime(event.registration_deadline)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-gray-500 col-span-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>Registration Deadline: {event.registration_deadline ? formatDateTime(event.registration_deadline) : 'No deadline'}</span>
+        </div>
       </div>
       <div className="space-y-1">
         <h4 className="text-md font-medium">Rules</h4>

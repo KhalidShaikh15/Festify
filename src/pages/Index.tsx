@@ -63,16 +63,28 @@ const Index = () => {
     <Layout>
       <div className="space-y-8">
         <section className="bg-cyan-600 text-white p-8 rounded-lg shadow-md">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl font-bold mb-4">Campus Events Platform</h1>
-            <p className="text-lg mb-6">Discover, participate, and collaborate in exciting events happening around the campus.</p>
-            <Button 
-              onClick={() => window.location.href = '#events'} 
-              variant="outline" 
-              className="bg-white text-cyan-600 hover:bg-gray-100"
-            >
-              Explore Events
-            </Button>
+          <div className="flex flex-col md:flex-row items-center justify-between max-w-6xl mx-auto">
+            <div className="md:w-1/2 md:pr-8 mb-6 md:mb-0 text-center md:text-left">
+              <h1 className="text-3xl font-bold mb-4">Campus Events Platform</h1>
+              <p className="text-lg mb-6">Discover, participate, and collaborate in exciting events happening around the campus.</p>
+              <Button 
+                onClick={() => window.location.href = '#events'} 
+                variant="outline" 
+                className="bg-white text-cyan-600 hover:bg-gray-100"
+              >
+                Explore Events
+              </Button>
+            </div>
+            <div className="md:w-1/2">
+              <img 
+                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b" 
+                alt="Campus Events" 
+                className="w-full h-auto rounded-lg shadow-lg"
+                onError={(e) => {
+                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=Campus+Events";
+                }}
+              />
+            </div>
           </div>
         </section>
         
