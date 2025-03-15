@@ -1,185 +1,144 @@
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { format, parseISO, isBefore, addMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
-import { Event } from '@/types';
-import { format, parseISO, isBefore, addMinutes } from 'date-fns';
+import { EventWithParticipantCount } from '@/types';
 
 const Index = () => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [events, setEvents] = useState<EventWithParticipantCount[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .order('event_date', { ascending: true });
-        
-        if (error) throw error;
-
-        // Filter out events with passed registration deadlines (with 5-minute grace period)
-        const now = new Date();
-        const activeEvents = data.filter(event => {
-          if (!event.registration_deadline) return true;
-          
-          const deadline = new Date(event.registration_deadline);
-          // Add 5 minutes to the deadline for grace period
-          const extendedDeadline = addMinutes(deadline, 5);
-          return !isBefore(extendedDeadline, now);
-        });
-
-        // Filter out events that have reached max participants
-        const eventsWithParticipantCounts = await Promise.all(activeEvents.map(async event => {
-          if (event.max_participants === null) return event;
-          
-          const { count, error: countError } = await supabase
-            .from('participants')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_id', event.id);
-            
-          if (countError) {
-            console.error('Error fetching participant count:', countError);
-            return event;
-          }
-
-          // Only include events that haven't reached max participants
-          if (count !== null && count >= event.max_participants) {
-            return null;
-          }
-          return event;
-        }));
-
-        // Filter out null values (events that have reached max participants)
-        setEvents(eventsWithParticipantCounts.filter(Boolean) as Event[]);
-      } catch (error: any) {
-        toast({
-          title: "Error fetching events",
-          description: error.message,
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEvents();
+  }, []);
 
-    // Set up real-time subscription for events table
-    const channel = supabase
-      .channel('public:events')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'events'
-      }, fetchEvents)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [toast]);
-
-  const formatDate = (dateString: string) => {
+  const fetchEvents = async () => {
+    setIsLoading(true);
     try {
-      return format(parseISO(dateString), 'MMMM dd, yyyy');
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  const formatDateTime = (dateTimeString: string) => {
-    try {
-      return format(parseISO(dateTimeString), 'MMMM dd, yyyy h:mm a');
-    } catch (e) {
-      return dateTimeString;
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          participant_count:participants(count)
+        `)
+        .order('event_date', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Filter out events with closed registration and 5-minute grace period passed
+      const now = new Date();
+      const filteredEvents = data.map(event => ({
+        ...event,
+        participant_count: event.participant_count[0].count,
+      })).filter(event => {
+        if (!event.registration_deadline) return true;
+        
+        // Check if the registration has closed more than 5 minutes ago
+        const deadline = parseISO(event.registration_deadline);
+        const deadlinePlusGrace = addMinutes(deadline, 5);
+        return isBefore(now, deadlinePlusGrace);
+      });
+      
+      setEvents(filteredEvents);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching events",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Layout>
       <div className="space-y-8">
-        {/* Hero Section with Logo and Banner - Changed from blue to cyan */}
-        <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-lg overflow-hidden shadow-lg mb-8">
-          <div className="flex flex-col md:flex-row items-center p-6 md:p-10">
-            <div className="md:w-2/3 text-white mb-6 md:mb-0 md:pr-8">
-              <div className="mb-6">
-                
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to the Campus Event Hub</h1>
-              <p className="text-lg opacity-90 mb-6">Your one-stop platform for all campus activities and events</p>
-              <div className="flex space-x-4">
-                
-                
-              </div>
-            </div>
-            <div className="md:w-1/3">
-              <img 
-                alt="Event Banner" 
-                className="rounded-lg shadow-lg w-full h-auto" 
-                onError={e => {
-                  e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=UPCOMING+EVENTS";
-                }} 
-                src="/lovable-uploads/0ec4284d-5a77-42ae-99ca-d7e9e4166656.jpg" 
-              />
-            </div>
+        <section className="bg-cyan-600 text-white p-8 rounded-lg shadow-md">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-3xl font-bold mb-4">Campus Events Platform</h1>
+            <p className="text-lg mb-6">Discover, participate, and collaborate in exciting events happening around the campus.</p>
+            <Button 
+              onClick={() => window.location.href = '#events'} 
+              variant="outline" 
+              className="bg-white text-cyan-600 hover:bg-gray-100"
+            >
+              Explore Events
+            </Button>
           </div>
-        </div>
-
-        <div id="events">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold">Upcoming Events</h2>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-12">
+        </section>
+        
+        <div id="events" className="space-y-4">
+          <h2 className="text-2xl font-bold">Upcoming Events</h2>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center min-h-[200px]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
           ) : events.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-medium text-gray-500">No events available right now</h3>
-              <p className="mt-2 text-gray-400">Check back later for upcoming events</p>
-            </div>
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-muted-foreground">No upcoming events at the moment.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {events.map(event => (
-                <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="w-full h-48 overflow-hidden">
-                    <img 
-                      src={event.image_url || `https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=500&h=350&fit=crop`} 
-                      alt={event.title} 
-                      className="w-full h-full object-cover transition-transform hover:scale-105" 
-                      onError={e => {
-                        e.currentTarget.src = `https://placehold.co/600x400/667eea/ffffff?text=${event.title.replace(/\s+/g, '+')}`;
-                      }} 
+                <Card key={event.id} className="flex flex-col h-full hover:shadow-md transition-shadow">
+                  <div className="relative">
+                    <img
+                      src={event.image_url || "https://placehold.co/600x400/667eea/ffffff?text=Event+Image"}
+                      alt={event.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=Event+Image";
+                      }}
                     />
+                    {event.registration_deadline && (
+                      <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        Register by: {format(parseISO(event.registration_deadline), 'MMM dd, yyyy')}
+                      </div>
+                    )}
                   </div>
-                  <CardHeader className="pb-3">
+                  <CardHeader className="flex-grow">
                     <CardTitle className="text-xl">{event.title}</CardTitle>
                     <CardDescription className="line-clamp-2">{event.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(event.event_date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock className="h-4 w-4" />
-                      <span>{event.event_time}</span>
+                  <CardContent className="pb-0">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="h-4 w-4 mr-1" /> 
+                        {format(parseISO(event.event_date), 'MMM dd, yyyy')}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="h-4 w-4 mr-1" /> 
+                        {event.event_time}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 col-span-2">
+                        <User className="h-4 w-4 mr-1" /> 
+                        {event.max_participants 
+                          ? `${event.participant_count || 0}/${event.max_participants} participants`
+                          : `${event.participant_count || 0} participants`
+                        }
+                      </div>
                     </div>
                   </CardContent>
-                  <CardFooter>
-                    <Link to={`/events/${event.id}`} className="w-full">
-                      <Button variant="outline" className="w-full">View Details</Button>
-                    </Link>
+                  <CardFooter className="pt-4">
+                    <Button 
+                      onClick={() => navigate(`/events/${event.id}`)} 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      View Details <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}

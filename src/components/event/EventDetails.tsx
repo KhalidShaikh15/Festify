@@ -2,7 +2,7 @@
 import { Event } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { CardContent } from '@/components/ui/card';
-import { Calendar, Clock, Building, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle } from 'lucide-react';
 
 type EventDetailsProps = {
   event: Event;
@@ -36,13 +36,6 @@ const EventDetailsSection = ({ event }: EventDetailsProps) => {
           <Clock className="h-4 w-4" />
           <span>{event.event_time}</span>
         </div>
-        
-        {event.location && (
-          <div className="flex items-center gap-2 text-gray-500">
-            <Building className="h-4 w-4" />
-            <span>{event.location}</span>
-          </div>
-        )}
         
         {event.registration_deadline && (
           <div className="flex items-center gap-2 text-gray-500">
