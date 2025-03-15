@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +27,6 @@ const EventForm = (): JSX.Element => {
     registration_deadline: format(addDays(new Date(), 1), 'yyyy-MM-dd\'T\'HH:mm'),
     max_participants: 100,
     image_url: '',
-    location: '',
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -235,7 +233,6 @@ const EventForm = (): JSX.Element => {
             registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             image_url: imageUrl,
-            location: formData.location,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id);
@@ -258,7 +255,6 @@ const EventForm = (): JSX.Element => {
             registration_deadline: registrationDeadline,
             max_participants: formData.max_participants ? Number(formData.max_participants) : null,
             image_url: imageUrl,
-            location: formData.location,
             created_by: session.user.id,
           });
         

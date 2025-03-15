@@ -52,17 +52,6 @@ const EventFormBasic = ({ formData, errors, handleInputChange }: EventFormBasicP
           rows={4}
         />
       </div>
-
-      <div className="space-y-2">
-        <label htmlFor="location" className="text-sm font-medium">Location (Optional)</label>
-        <Input
-          id="location"
-          name="location"
-          value={formData.location || ''}
-          onChange={handleInputChange}
-          placeholder="Enter event location"
-        />
-      </div>
     </>
   );
 };

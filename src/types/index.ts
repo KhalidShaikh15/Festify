@@ -12,7 +12,6 @@ export type Event = {
   registration_deadline: string | null;
   max_participants: number | null;
   image_url: string | null;
-  location: string | null;
 };
 
 export type Participant = {

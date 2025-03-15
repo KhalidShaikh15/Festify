@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Event } from '@/types';
-import { isBefore } from 'date-fns';
+import { isBefore, addMinutes } from 'date-fns';
 
 // Import refactored components
 import EventHeader from '@/components/event/EventHeader';
@@ -36,10 +36,11 @@ const EventDetailsPage = () => {
         
         setEvent(data);
         
-        // Check if registration deadline has passed
+        // Check if registration deadline has passed (with 5-minute grace period)
         if (data.registration_deadline) {
           const deadline = new Date(data.registration_deadline);
-          setIsRegistrationOpen(!isBefore(deadline, new Date()));
+          const extendedDeadline = addMinutes(deadline, 5);
+          setIsRegistrationOpen(!isBefore(extendedDeadline, new Date()));
         }
       } catch (error: any) {
         toast({
