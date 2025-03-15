@@ -106,18 +106,14 @@ const Index = () => {
               <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to the Campus Event Hub</h1>
               <p className="text-lg opacity-90 mb-6">Your one-stop platform for all campus activities and events</p>
               <div className="flex space-x-4">
-                <Button className="bg-white text-blue-700 hover:bg-blue-50">
-                  <Link to="#events">Browse Events</Link>
-                </Button>
-                <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                  <Link to="/auth">Sign In</Link>
-                </Button>
+                
+                
               </div>
             </div>
             <div className="md:w-1/3">
-              <img src="https://images.unsplash.com/photo-1518770660439-4636190af475" alt="Event Banner" className="rounded-lg shadow-lg w-full h-auto" onError={e => {
+              <img alt="Event Banner" className="rounded-lg shadow-lg w-full h-auto" onError={e => {
               e.currentTarget.src = "https://placehold.co/600x400/667eea/ffffff?text=UPCOMING+EVENTS";
-            }} />
+            }} src="/lovable-uploads/0ec4284d-5a77-42ae-99ca-d7e9e4166656.jpg" />
             </div>
           </div>
         </div>
